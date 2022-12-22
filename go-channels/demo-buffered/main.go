@@ -16,7 +16,7 @@ func main() {
 	ch := make(chan int, 2)
 	go func(ch chan int, wg *sync.WaitGroup) {
 		defer wg.Done()
-		//  recieving all the chanels here
+		//  receiving all the chanels here
 		fmt.Println(<-ch)
 		fmt.Println(<-ch)
 	}(ch, wg)
