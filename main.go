@@ -14,12 +14,12 @@ var (
 
 func main() {
 	wg := &sync.WaitGroup{}
-	m := &sync.Mutex{}
+	m := &sync.RWMutex{}
 	for i := 0; i < 10; i++ {
 		id := rnd.Intn(10) + 1
 
 		wg.Add(2)
-		go func(id int, wg *sync.WaitGroup, m *sync.Mutex) {
+		go func(id int, wg *sync.WaitGroup, m *sync.RWMutex) {
 			defer wg.Done()
 			book, val := queryCache(id, m)
 			if val {
@@ -30,7 +30,7 @@ func main() {
 
 		}(id, wg, m)
 
-		go func(id int, wg *sync.WaitGroup, m *sync.Mutex) {
+		go func(id int, wg *sync.WaitGroup, m *sync.RWMutex) {
 			defer wg.Done()
 			book, val := queryFromDB(id, m)
 			if val {
@@ -42,10 +42,10 @@ func main() {
 	}
 	wg.Wait()
 }
-func queryCache(id int, m *sync.Mutex) (Book, bool) {
-	m.Lock()
+func queryCache(id int, m *sync.RWMutex) (Book, bool) {
+	m.RLock()
 	b, ok := cache[id]
-	m.Unlock()
+	m.RUnlock()
 	if ok {
 		return b, true
 	}
@@ -53,7 +53,7 @@ func queryCache(id int, m *sync.Mutex) (Book, bool) {
 	return Book{}, false
 }
 
-func queryFromDB(id int, m *sync.Mutex) (Book, bool) {
+func queryFromDB(id int, m *sync.RWMutex) (Book, bool) {
 	time.Sleep(100 * time.Millisecond)
 	for _, b := range books {
 		if b.ID == id {
