@@ -11,6 +11,7 @@ import (
 // 4. Recieving message okay
 //   - if buffered all buffered messages are available
 //   - if unbuffered, or buffer empty, recieve zero value
+
 func main() {
 	wg := &sync.WaitGroup{}
 	ch := make(chan int)
