@@ -15,29 +15,39 @@ var (
 func main() {
 	wg := &sync.WaitGroup{}
 	m := &sync.RWMutex{}
+	dbChan := make(chan Book)
+	cacheChan := make(chan Book)
 	for i := 0; i < 10; i++ {
 		id := rnd.Intn(10) + 1
 
 		wg.Add(2)
-		go func(id int, wg *sync.WaitGroup, m *sync.RWMutex) {
+		go func(id int, wg *sync.WaitGroup, m *sync.RWMutex, ch chan<- Book) {
 			defer wg.Done()
 			book, val := queryCache(id, m)
 			if val {
-				fmt.Println("--------------Getting from Cache-----------------------------")
-				fmt.Println(book)
-
+				ch <- book
 			}
 
-		}(id, wg, m)
+		}(id, wg, m, cacheChan)
 
-		go func(id int, wg *sync.WaitGroup, m *sync.RWMutex) {
+		go func(id int, wg *sync.WaitGroup, m *sync.RWMutex, ch chan<- Book) {
 			defer wg.Done()
 			book, val := queryFromDB(id, m)
 			if val {
-				fmt.Println("--------------Getting from DB-----------------------------")
-				fmt.Println(book)
+				ch <- book
 			}
-		}(id, wg, m)
+		}(id, wg, m, dbChan)
+		go func(dbChan, cacheChan <-chan Book) {
+			select {
+			case b := <-cacheChan:
+				fmt.Println("--------------------From cache--------------------")
+				fmt.Println(b)
+				<-dbChan
+			case b := <-dbChan:
+				fmt.Println("--------------------From DB--------------------")
+				fmt.Println(b)
+			}
+		}(dbChan, cacheChan)
 		time.Sleep(150 * time.Millisecond)
 	}
 	wg.Wait()
